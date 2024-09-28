@@ -191,6 +191,18 @@ class ForceFieldConfig:
         return
 
 
+class XmlSerializerConfig:
+    def __init__(self):
+        self.coordinates = ""
+        self.system = ""
+        return
+
+    def serialize(self, root):
+        assign_tag(root, "coordinates", self.coordinates)
+        assign_tag(root, "system", self.system)
+        return
+
+
 class InputFilesConfig:
     def __init__(self):
         self.amber = None

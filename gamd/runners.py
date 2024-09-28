@@ -236,20 +236,42 @@ class Runner:
             prodstartstep_file.write(str(production_logging_start_step))
 
     def register_trajectory_reporter(self, restart):
+        from mdtraj.reporters import NetCDFReporter
+        
         simulation = self.gamd_simulation.simulation
         traj_reporter = self.gamd_simulation.traj_reporter
         output_directory = self.config.outputs.directory
         extension = self.config.outputs.reporting.coordinates_file_type
         traj_name = os.path.join(output_directory, 'output.%s' % extension)
         traj_append = restart
+        
+        # Get solute atom indices
+        # Set atom_indices = None to save all atoms
+        atom_indices = self._get_atom_indices()
 
         if traj_reporter == openmm_app.DCDReporter:
             simulation.reporters.append(traj_reporter(
-                traj_name, self.config.outputs.reporting.coordinates_interval,
-                append=traj_append))
+                traj_name, self.config.outputs.reporting.coordinates_interval, \
+                append=traj_append, atomSubset=atom_indices))
         elif traj_reporter == openmm_app.PDBReporter:
             simulation.reporters.append(traj_reporter(
-                traj_name, self.config.outputs.reporting.coordinates_interval))
+                traj_name, self.config.outputs.reporting.coordinates_interval))    
+        elif traj_reporter == NetCDFReporter:
+            simulation.reporters.append(traj_reporter(
+                traj_name, self.config.outputs.reporting.coordinates_interval, \
+                atomSubset=atom_indices))
+
+    def _get_atom_indices(self):
+        import mdtraj
+        atom_indices = []
+        simulation = self.gamd_simulation.simulation
+        mdtop = mdtraj.Topology.from_openmm(simulation.topology)
+        res = [ r for r in mdtop.residues if r.name not in ('HOH', 'NA', 'CL', 'K') ]
+        for r in res:
+            for a in r.atoms:
+                atom_indices.append(a.index)
+
+        return atom_indices
 
     def register_state_data_reporter(self, restart):
         if self.state_data_reporter_enabled:

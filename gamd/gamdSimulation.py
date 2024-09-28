@@ -176,6 +176,16 @@ class GamdSimulationFactory:
                 nonbondedCutoff=config.system.nonbonded_cutoff,
                 constraints=constraints)
 
+        elif config.input_files.xmlserializer is not None:
+            from openmm import XmlSerializer
+            with open(config.input_files.xmlserializer.system, 'r') as f:
+                system = XmlSerializer.deserialize(f.read())
+            gamdSimulation.system = system
+            pdb = openmm_app.PDBFile(config.input_files.xmlserializer.coordinates)
+            #topology = pdb.topology
+            topology = pdb   # L244: topology = topology.topology
+            positions = pdb  # L263: positions = positions.positions
+
         else:
             raise Exception("No valid input files found. OpenMM simulation "\
                             "not made.")
@@ -207,11 +217,19 @@ class GamdSimulationFactory:
                             config.integrator.algorithm)
 
         if config.barostat is not None:
-            barostat = openmm.MonteCarloBarostat(
-                config.barostat.pressure,
-                config.temperature,
-                config.barostat.frequency)
-            gamdSimulation.system.addForce(barostat)
+            # check if barostat is already defined in system
+            flag = False
+            for force in gamdSimulation.system.getForces():
+                if "barostat" in force.getName().lower():
+                    print("Barostat is already defined.")
+                    flag = True
+            if flag == False:
+                print("Adding barostat...")
+                barostat = openmm.MonteCarloBarostat(
+                    config.barostat.pressure,
+                    config.temperature,
+                    config.barostat.frequency)
+                gamdSimulation.system.addForce(barostat)
 
         properties = {}
         user_platform_name = platform_name.lower()
@@ -265,7 +283,11 @@ class GamdSimulationFactory:
 
         elif config.outputs.reporting.coordinates_file_type == "pdb":
             gamdSimulation.traj_reporter = openmm_app.PDBReporter
-
+        
+        elif config.outputs.reporting.coordinates_file_type == "netcdf" or config.outputs.reporting.coordinates_file_type == "nc":
+            from mdtraj.reporters import NetCDFReporter
+            gamdSimulation.traj_reporter = NetCDFReporter
+        
         else:
             raise Exception("Reporter type not found:",
                             config.outputs.reporting.coordinates_file_type)

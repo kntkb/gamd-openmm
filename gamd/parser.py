@@ -295,6 +295,21 @@ def parse_forcefield_tag(input_files_tag):
     return forcefield_config
 
 
+def parse_xmlserializer_tag(input_files_tag):
+    xmlserializer_config = config.XmlSerializerConfig()
+    for xmlserializer_tag in input_files_tag:
+        if xmlserializer_tag.tag == "coordinates":
+            xmlserializer_config.coordinates = assign_tag(
+                xmlserializer_tag, str)
+        elif xmlserializer_tag.tag == "system":
+            xmlserializer_config.system = assign_tag(xmlserializer_tag, str)
+        else:
+            print("Warning: parameter in XML not found in xmlserializer tag. "
+                  "Spelling error?", xmlserializer_tag.tag)
+    
+    return xmlserializer_config
+
+
 def parse_outputs_tag(tag):
     outputs_config = config.OutputsConfig()
     for outputs_tag in tag:
@@ -388,7 +403,7 @@ class XmlParser(Parser):
                     if input_files_tag.tag == "amber":
                         assert not input_file_provided, "Only one input set "\
                             "allowed. Cannot provide more than one <amber>, "\
-                            "<charmm>, <gromacs>, or <forcefield> tag."
+                            "<charmm>, <gromacs>, <forcefield> or <xmlserializer> tag."
                         
                         self.config.input_files.amber = parse_amber_tag(
                             input_files_tag)
@@ -397,7 +412,7 @@ class XmlParser(Parser):
                     elif input_files_tag.tag == "charmm":
                         assert not input_file_provided, "Only one input set "\
                             "allowed. Cannot provide more than one <amber>, "\
-                            "<charmm>, <gromacs>, or <forcefield> tag."
+                            "<charmm>, <gromacs>, <forcefield> or <xmlserializer> tag."
                         self.config.input_files.charmm = parse_charmm_tag(
                             input_files_tag)
                         input_file_provided = True
@@ -405,7 +420,7 @@ class XmlParser(Parser):
                     elif input_files_tag.tag == "gromacs":
                         assert not input_file_provided, "Only one input set "\
                             "allowed. Cannot provide more than one <amber>, "\
-                            "<charmm>, <gromacs>, or <forcefield> tag."
+                            "<charmm>, <gromacs>, <forcefield> or <xmlserializer> tag."
                         self.config.input_files.gromacs = parse_gromacs_tag(
                             input_files_tag)
                         input_file_provided = True
@@ -413,11 +428,19 @@ class XmlParser(Parser):
                     elif input_files_tag.tag == "forcefield":
                         assert not input_file_provided, "Only one input set "\
                             "allowed. Cannot provide more than one <amber>, "\
-                            "<charmm>, <gromacs>, or <forcefield> tag."
+                            "<charmm>, <gromacs>, <forcefield> or <xmlserializer> tag."
                         self.config.input_files.forcefield = parse_forcefield_tag(
                             input_files_tag)
                         input_file_provided = True
-                        
+
+                    elif input_files_tag.tag == "xmlserializer":
+                        assert not input_file_provided, "Only one input set "\
+                            "allowed. Cannot provide more than one <amber>, "\
+                            "<charmm>, <gromacs>, <forcefield> or <xmlserializer> tag."
+                        self.config.input_files.xmlserializer = parse_xmlserializer_tag(
+                            input_files_tag)
+                        input_file_provided = True
+
                     else:
                         raise Exception("input-files type not implemented:", 
                                         input_files_tag.tag)
